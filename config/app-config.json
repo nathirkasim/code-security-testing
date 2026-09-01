@@ -1,0 +1,36 @@
+{
+  "application": {
+    "name": "TigerGate Baseline Clean Service",
+    "version": "1.0.0",
+    "environment": "production"
+  },
+  "server": {
+    "port": 8080,
+    "host": "127.0.0.1",
+    "timeoutMs": 30000,
+    "tls": {
+      "enabled": true,
+      "minVersion": "TLSv1.2"
+    }
+  },
+  "security": {
+    "cors": {
+      "allowedOrigins": [
+        "https://app.example.com"
+      ],
+      "allowedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    "rateLimiting": {
+      "enabled": true,
+      "maxRequestsPerMinute": 100
+    },
+    "headers": {
+      "contentSecurityPolicy": "default-src 'self'",
+      "frameOptions": "DENY",
+      "contentTypeOptions": "nosniff"
+    }
+  }
+}

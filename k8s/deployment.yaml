@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clean-service-deployment
+  namespace: production
+  labels:
+    app.kubernetes.io/name: clean-service
+    app.kubernetes.io/component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clean-service
+  template:
+    metadata:
+      labels:
+        app: clean-service
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: clean-service-app
+          image: internal-registry.example.com/clean-service:v1.0.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: clean-service-config
+                  key: database_host
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: clean-service-db-secret
+                  key: db_password
