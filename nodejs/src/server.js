@@ -1,6 +1,8 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const csrf = require('csurf');
 const crypto = require('crypto');
 
 const app = express();
@@ -14,11 +16,16 @@ app.use(
   cors({
     origin: process.env.ALLOWED_ORIGIN || 'https://app.example.com',
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'CSRF-Token'],
   })
 );
 
 app.use(express.json({ limit: '10kb' }));
+app.use(cookieParser());
+
+// Initialize CSRF protection middleware (resolves express-check-csurf-middleware-usage rule)
+const csrfProtection = csrf({ cookie: { httpOnly: true, secure: true, sameSite: 'strict' } });
+app.use(csrfProtection);
 
 // Simulated in-memory database using parameterized query lookup pattern
 const usersDb = new Map();
@@ -41,6 +48,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', service: 'nodejs-clean-baseline' });
 });
 
+// Endpoint to retrieve CSRF token for clients
+app.get('/api/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 // User Retrieval with input type enforcement
 app.get('/api/users/:id', (req, res) => {
   const userId = parseInt(req.params.id, 10);
@@ -60,7 +72,7 @@ app.get('/api/users/:id', (req, res) => {
   });
 });
 
-// User Registration Endpoint with safe password hashing
+// User Registration Endpoint with safe password hashing and CSRF protection
 app.post('/api/users', (req, res) => {
   const { username, email, password } = req.body;
 

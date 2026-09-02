@@ -16,25 +16,25 @@ jobs:
 
     steps:
       - name: Checkout Codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@39cd149518ed23a4b92f96033bc6f658079a4055 # v5.1.1
         with:
           python-version: '3.11'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60ed152410c04be587e2a471f363b06361027fc8 # v4.1.0
         with:
           node-version: '20'
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0a12ed756524120fd970e742b5ed533036e52410 # v5.0.2
         with:
           go-version: '1.22'
 
       - name: Set up Java JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@99b8673f64d0992310244f753435aedd68b7efa9 # v4.2.2
         with:
           distribution: 'temurin'
           java-version: '17'

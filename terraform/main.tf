@@ -24,7 +24,52 @@ resource "aws_kms_key" "storage_key" {
   }
 }
 
-# Secure S3 Bucket
+# S3 Access Logs Bucket (Resolves AWS-0089 S3 Logging Rule)
+resource "aws_s3_bucket" "access_logs_bucket" {
+  bucket        = "app-access-logs-${var.environment}"
+  force_destroy = false
+
+  tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "access_logs_versioning" {
+  bucket = aws_s3_bucket.access_logs_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs_encryption" {
+  bucket = aws_s3_bucket.access_logs_bucket.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.storage_key.arn
+      sse_algorithm     = "aws:kms"
+    }
+    bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "access_logs_public_block" {
+  bucket = aws_s3_bucket.access_logs_bucket.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_logging" "access_logs_self_logging" {
+  bucket        = aws_s3_bucket.access_logs_bucket.id
+  target_bucket = aws_s3_bucket.access_logs_bucket.id
+  target_prefix = "self-log/"
+}
+
+# Secure Primary Data S3 Bucket
 resource "aws_s3_bucket" "secure_storage" {
   bucket        = "app-secure-data-storage-${var.environment}"
   force_destroy = false
@@ -35,7 +80,14 @@ resource "aws_s3_bucket" "secure_storage" {
   }
 }
 
-# Enable S3 Bucket Versioning
+# Enable Primary S3 Bucket Logging (AWS-0089)
+resource "aws_s3_bucket_logging" "storage_logging" {
+  bucket        = aws_s3_bucket.secure_storage.id
+  target_bucket = aws_s3_bucket.access_logs_bucket.id
+  target_prefix = "s3-access-logs/"
+}
+
+# Enable Primary S3 Bucket Versioning
 resource "aws_s3_bucket_versioning" "storage_versioning" {
   bucket = aws_s3_bucket.secure_storage.id
   versioning_configuration {
@@ -43,7 +95,7 @@ resource "aws_s3_bucket_versioning" "storage_versioning" {
   }
 }
 
-# Enable S3 Server-Side Encryption with KMS
+# Enable Primary S3 Server-Side Encryption with KMS
 resource "aws_s3_bucket_server_side_encryption_configuration" "storage_encryption" {
   bucket = aws_s3_bucket.secure_storage.id
 
@@ -56,7 +108,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "storage_encryptio
   }
 }
 
-# Block Public Access Entirely
+# Block Public Access Entirely on Primary S3 Bucket
 resource "aws_s3_bucket_public_access_block" "storage_public_block" {
   bucket = aws_s3_bucket.secure_storage.id
 
