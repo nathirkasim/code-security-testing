@@ -1,0 +1,39 @@
+name: TigerGate Security Scan
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+
+    container:
+      image: tigergate/tigergate-cli:latest
+
+    env:
+      TIGERGATE_API_KEY: ${{ secrets.TIGERGATE_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TigerGate Security Scan
+        run: >
+          scan
+          --api-url https://api.staging.tigergate.dev/api/ci
+          --type all
+          --scan-scope auto
+          --fail-on critical,high
+          --max-critical 0
+          --max-high 10
+          --quality-gate
+          --exclude "node_modules,dist,vendor"
+          --sca-ignore-unfixed
+          --compliance
+          --upload
